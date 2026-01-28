@@ -1,5 +1,9 @@
 #pragma once
-
+#define STATUS_EMPTY 0
+#define STATUS_READY 1
+#define STATUS_RUNNING 2
+#define STATUS_BLOCKED 3
+#define STATUS_QUIT 4
 typedef struct _process
 {
 	struct _process*        nextReadyProcess;
