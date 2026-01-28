@@ -117,22 +117,63 @@ int k_spawn(char* name, int (*entryPoint)(void *), void* arg, int stacksize, int
     disableInterrupts();
 
     /* Validate all of the parameters, starting with the name. */
-    if (name == NULL)
-    {
-        console_output(debugFlag, "spawn(): Name value is NULL.\n");
-        return -1;
-    }
-    if (strlen(name) >= (MAXNAME - 1))
-    {
-        console_output(debugFlag, "spawn(): Process name is too long.  Halting...\n");
-        stop( 1);
-    }
+ if (name == NULL)
+ {
+     console_output(debugFlag, "spawn(): Name value is NULL.\n");
+     return -1;
+ }
+ if (strlen(name) >= (MAXNAME - 1))
+ {
+     console_output(debugFlag, "spawn(): Process name is too long.  Halting...\n");
+     stop( 1);
+ }
 
+ /*Testing for kernel mode*/
+ unsigned int psr = get_psr();
+ if ((psr & PSR_KERNEL_MODE) == 0)
+ {
+     console_output(debugFlag, "spawn(): Kernel mode is required. \n");
+     return -1;
+ }
 
-    /* Find an empty slot in the process table */
-    
-    proc_slot = 1;  // just use 1 for now!
-    pNewProc = &processTable[proc_slot];
+ /*entrypoint validation*/
+ if (entryPoint == NULL)
+ {
+     console_output(debugFlag, "spawn(): Entry point value is NULL.\n");
+     return -1;
+ }
+/*Checking stack size and priorities*/
+ if (stacksize < THREADS_MIN_STACK_SIZE)
+ {
+     console_output(debugFlag, "spawn():  Stack size is to small.\n");
+     return -1;
+ }
+ if (priority < LOWEST_PRIORITY || priority > HIGHEST_PRIORITY)
+ {
+     console_output(debugFlag, "spawn():  Priority value is invalid.\n");
+     return -1;
+ }
+ /* Find an empty slot in the process table */
+ 
+ proc_slot = -1;  // was just use 1 for now! needed to be -1
+ int checkedSlots = 0;
+ int procSlotIndex = 0;
+ while(checkedSlots < MAXPROC)
+ {
+     if (processTable[procSlot].status == STATUS_EMPTY)
+     {
+         proc_slot = procSlot;
+         break;
+     }
+     procSlotIndex = (procSlot + 1) % MAXPROC;
+     checkedSlots++;
+ }
+ if (proc_slot == -1)
+ {
+     console_output(debugFlag, "spawn(): no process slots free. \n");
+     return -1;
+ }
+ pNewProc = &processTable[proc_slot];
 
     /* Setup the entry in the process table. */
     strcpy(pNewProc->name, name);
